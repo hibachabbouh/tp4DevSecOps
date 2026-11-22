@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp
+  namespace: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webapp
+  template:
+    metadata:
+      labels:
+        app: webapp
+    spec:
+      containers:
+        - name: webapp
+          image: ghcr.io/hibachabbouh/tp4devsecops:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: API_KEY
+              value: "***REMOVED***"
+          securityContext:
+            privileged: true
+            runAsUser: 0

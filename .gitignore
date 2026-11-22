@@ -1,0 +1,5 @@
+secrets.yaml
+keys.txt
+cosign.key
+*.key
+__pycache__/
