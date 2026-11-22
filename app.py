@@ -1,5 +1,8 @@
+import os
+
 from flask import Flask, jsonify
-from config import API_KEY
+
+API_KEY = os.environ.get("API_KEY")
 
 app = Flask(__name__)
 
