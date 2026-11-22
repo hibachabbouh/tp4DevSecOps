@@ -1,0 +1,42 @@
+2026-11-22T22:39:18+01:00	INFO	[misconfig] Misconfiguration scanning is enabled
+2026-11-22T22:39:18+01:00	INFO	[checks-client] Using existing checks from cache	path="C:\\Users\\HP\\AppData\\Local\\trivy\\policy\\content"
+2026-11-22T22:39:19+01:00	INFO	Detected config files	num=3
+{
+  "SchemaVersion": 2,
+  "Trivy": {
+    "Version": "0.76.2"
+  },
+  "ReportID": "01a20533-0636-712c-836c-a92fa5f41d09",
+  "CreatedAt": "2026-11-22T22:39:19.7340768+01:00",
+  "ArtifactName": "k8s",
+  "ArtifactType": "filesystem",
+  "Results": [
+    {
+      "Target": "deployment.yaml",
+      "Class": "config",
+      "Type": "kubernetes",
+      "MisconfSummary": {
+        "Successes": 22,
+        "Failures": 0
+      }
+    },
+    {
+      "Target": "namespace.yaml",
+      "Class": "config",
+      "Type": "kubernetes",
+      "MisconfSummary": {
+        "Successes": 22,
+        "Failures": 0
+      }
+    },
+    {
+      "Target": "networkpolicy.yaml",
+      "Class": "config",
+      "Type": "kubernetes",
+      "MisconfSummary": {
+        "Successes": 22,
+        "Failures": 0
+      }
+    }
+  ]
+}

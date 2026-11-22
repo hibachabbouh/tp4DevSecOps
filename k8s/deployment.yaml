@@ -13,14 +13,50 @@ spec:
       labels:
         app: webapp
     spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: webapp
-          image: ghcr.io/hibachabbouh/tp4devsecops:latest
+          image: ghcr.io/hibachabbouh/tp4devsecops@sha256:REMPLACER_PAR_LE_DIGEST
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           env:
             - name: API_KEY
-              value: "***REMOVED***"
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: API_KEY
           securityContext:
-            privileged: true
-            runAsUser: 0
+            privileged: false
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
