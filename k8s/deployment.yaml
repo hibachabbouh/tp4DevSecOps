@@ -22,7 +22,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: webapp
-          image: ghcr.io/hibachabbouh/tp4devsecops@sha256:REMPLACER_PAR_LE_DIGEST
+          image: ghcr.io/hibachabbouh/tp4devsecops@sha256:d3cbcfecb0b2382c20775b8e6ed7af962fd17bffe6db9c5a002bca2700f225fd
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
@@ -60,3 +60,4 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
+

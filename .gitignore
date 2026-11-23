@@ -2,4 +2,4 @@ secrets.yaml
 keys.txt
 cosign.key
 *.key
-__pycache__/
+__pycache__/kyverno-cli.tar
