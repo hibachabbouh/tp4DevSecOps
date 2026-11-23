@@ -33,7 +33,7 @@ spec:
                   name: app-secrets
                   key: API_KEY
           securityContext:
-            privileged: false
+            privileged: true
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             runAsNonRoot: true
