@@ -1,0 +1,112 @@
+name: CI-DevSecOps
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Gitleaks (historique complet)
+        run: |
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.21.2/gitleaks_8.21.2_linux_x64.tar.gz | tar -xz gitleaks
+          ./gitleaks git -v --redact --exit-code 1 .
+
+  iac-scan:
+    needs: secret-scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trivy config (IaC)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: config
+          scan-ref: k8s/
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+
+  sast-sca:
+    needs: iac-scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install bandit pip-audit
+      - name: SAST (Bandit)
+        run: bandit -r app.py -lll
+      - name: SCA (pip-audit)
+        continue-on-error: true
+        run: pip-audit -r requirements.txt
+
+  build-sign:
+    needs: sast-sca
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Nom d'image en minuscules
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build
+        run: docker build -t "$IMAGE:${{ github.sha }}" .
+
+      - name: Scan image (Trivy)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.IMAGE }}:${{ github.sha }}
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+
+      - name: SBOM (Syft, CycloneDX)
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.IMAGE }}:${{ github.sha }}
+          format: cyclonedx-json
+          output-file: sbom.cdx.json
+          upload-artifact: true
+
+      - name: Push
+        id: push
+        run: |
+          docker push "$IMAGE:${{ github.sha }}"
+          DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' "$IMAGE:${{ github.sha }}")
+          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
+          echo "DIGEST = $DIGEST" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: sigstore/cosign-installer@v3
+
+      - name: Signer l'image (par digest)
+        env:
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+        run: cosign sign --yes --key env://COSIGN_PRIVATE_KEY "${{ steps.push.outputs.digest }}"
+
+      - name: Attacher le SBOM (attestation)
+        env:
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+        run: >
+          cosign attest --yes --key env://COSIGN_PRIVATE_KEY
+          --type cyclonedx --predicate sbom.cdx.json
+          "${{ steps.push.outputs.digest }}"
+
+      - name: Verifier la signature
+        run: cosign verify --key cosign.pub "${{ steps.push.outputs.digest }}"
