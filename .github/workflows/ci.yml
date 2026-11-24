@@ -15,7 +15,8 @@ jobs:
       - name: Gitleaks (historique complet)
         run: |
           curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.21.2/gitleaks_8.21.2_linux_x64.tar.gz | tar -xz gitleaks
-          ./gitleaks git -v --redact --exit-code 1 .
+          ./gitleaks git -v --redact --exit-code 1 --log-opts="HEAD" .
+
 
   iac-scan:
     needs: secret-scan

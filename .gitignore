@@ -3,3 +3,5 @@ keys.txt
 cosign.key
 *.key
 __pycache__/kyverno-cli.tar
+kyverno-cli.tar
+django-DefectDojo/
